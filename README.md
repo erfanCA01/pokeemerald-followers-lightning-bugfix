@@ -1,3 +1,5 @@
+Forked from Arrant, using it as base which is a fork of PRET's pokeemerald disassembly
+
 # Pokémon Emerald
 
 This is a fork of the [matching decompilation](https://github.com/pret/pokeemerald) at [PRET](https://github.com/pret).
