@@ -68,6 +68,7 @@ COMMON_DATA IntrFunc gIntrTable[INTR_COUNT] = {0};
 COMMON_DATA u8 gLinkVSyncDisabled = 0;
 COMMON_DATA u32 IntrMain_Buffer[0x200] = {0};
 COMMON_DATA s8 gPcmDmaCounter = 0;
+COMMON_DATA u32 gInitialSeedForLua = 0; // added to see memory location for initseed after recomp for lua scripting
 
 static EWRAM_DATA u16 sTrainerId = 0;
 
@@ -232,6 +233,7 @@ static void SeedRngWithRtc(void)
     u32 seed = RtcGetMinuteCount();
     seed = (seed >> 16) ^ (seed & 0xFFFF);
     SeedRng(seed);
+    gInitialSeedForLua = seed; // Save the seed for Lua
 }
 #endif
 
