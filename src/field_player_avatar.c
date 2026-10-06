@@ -29,6 +29,9 @@
 #include "constants/moves.h"
 #include "constants/songs.h"
 #include "constants/trainer_types.h"
+#include "link.h"
+#include "constants/map_types.h"
+#include "constants/region_map_sections.h"
 
 #define NUM_FORCED_MOVEMENTS 18
 #define NUM_ACRO_BIKE_COLLISIONS 5
@@ -604,6 +607,7 @@ static void PlayerNotOnBikeTurningInPlace(u8 direction, u16 heldKeys)
 static void PlayerNotOnBikeMoving(u8 direction, u16 heldKeys)
 {
     u8 collision = CheckForPlayerAvatarCollision(direction);
+	bool8 canRun = FALSE;
 
     if (collision)
     {
@@ -651,8 +655,27 @@ static void PlayerNotOnBikeMoving(u8 direction, u16 heldKeys)
         return;
     }
 
-    if (!(gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_UNDERWATER) && (heldKeys & B_BUTTON) && FlagGet(FLAG_SYS_B_DASH)
-     && IsRunningDisallowed(gObjectEvents[gPlayerAvatar.objectEventId].currentMetatileBehavior) == 0)
+    if (!(gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_UNDERWATER) && (heldKeys & B_BUTTON) && FlagGet(FLAG_SYS_B_DASH))
+    {
+        // Allow if the tile naturally permits running
+        if (IsRunningDisallowed(gObjectEvents[gPlayerAvatar.objectEventId].currentMetatileBehavior) == 0)
+        {
+            canRun = TRUE;
+        }
+        // Override: Force allow running indoors, with specific exceptions
+        else if (gMapHeader.mapType == MAP_TYPE_INDOOR)
+        {
+            if (gMapHeader.regionMapSectionId != MAPSEC_FORTREE_CITY && 
+                gMapHeader.regionMapSectionId != MAPSEC_PACIFIDLOG_TOWN &&
+                gMapHeader.regionMapSectionId != MAPSEC_DYNAMIC && // Cable Club and Union Rooms use dynamic/special tags
+                !gReceivedRemoteLinkPlayers) // Block running during active multiplayer link sessions
+            {
+                canRun = TRUE;
+            }
+        }
+    }
+
+    if (canRun)
     {
         PlayerRun(direction);
         gPlayerAvatar.flags |= PLAYER_AVATAR_FLAG_DASH;
