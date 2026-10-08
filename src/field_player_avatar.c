@@ -21,6 +21,9 @@
 #include "task.h"
 #include "tv.h"
 #include "wild_encounter.h"
+#include "link.h"
+#include "constants/map_types.h"
+#include "constants/region_map_sections.h"
 #include "constants/abilities.h"
 #include "constants/event_objects.h"
 #include "constants/event_object_movement.h"
@@ -29,9 +32,6 @@
 #include "constants/moves.h"
 #include "constants/songs.h"
 #include "constants/trainer_types.h"
-#include "link.h"
-#include "constants/map_types.h"
-#include "constants/region_map_sections.h"
 
 #define NUM_FORCED_MOVEMENTS 18
 #define NUM_ACRO_BIKE_COLLISIONS 5
@@ -603,7 +603,18 @@ static void PlayerNotOnBikeTurningInPlace(u8 direction, u16 heldKeys)
 {
     PlayerTurnInPlace(direction);
 }
+static bool8 IsNotRunnableMap(void)
+{
+    // All 8 Gyms use the Gym battle scene attribute
+    if (gMapHeader.battleType == MAP_BATTLE_SCENE_GYM)
+        return TRUE;
 
+    // All Elite Four rooms, hallways, Champion room, and Hall of Fame share Ever Grande's section ID
+    if (gMapHeader.regionMapSectionId == MAPSEC_EVER_GRANDE_CITY)
+        return TRUE;
+
+    return FALSE;
+}
 static void PlayerNotOnBikeMoving(u8 direction, u16 heldKeys)
 {
     u8 collision = CheckForPlayerAvatarCollision(direction);
@@ -655,7 +666,7 @@ static void PlayerNotOnBikeMoving(u8 direction, u16 heldKeys)
         return;
     }
 
-    if (!(gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_UNDERWATER) && (heldKeys & B_BUTTON) && FlagGet(FLAG_SYS_B_DASH))
+	if (!(gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_UNDERWATER) && (heldKeys & B_BUTTON) && FlagGet(FLAG_SYS_B_DASH))
     {
         u8 tileBehavior = gObjectEvents[gPlayerAvatar.objectEventId].currentMetatileBehavior;
 
@@ -664,16 +675,15 @@ static void PlayerNotOnBikeMoving(u8 direction, u16 heldKeys)
         {
             canRun = TRUE;
         }
-        // Force allow running indoors, with link session & specific tile exclusions
+        // Force allow running indoors, with link session, ladder, and map exclusions
         else if (gMapHeader.mapType == MAP_TYPE_INDOOR)
         {
-            if (gMapHeader.regionMapSectionId != MAPSEC_DYNAMIC && !gReceivedRemoteLinkPlayers)
+            if (gMapHeader.regionMapSectionId != MAPSEC_DYNAMIC 
+                && !gReceivedRemoteLinkPlayers
+                && !MetatileBehavior_IsLadder(tileBehavior)
+                && !IsNotRunnableMap())
             {
-                // Disallow running on indoor ladders or stairs if needed for lore immersion
-                if (!MetatileBehavior_IsLadder(tileBehavior))
-                {
-                    canRun = TRUE;
-                }
+                canRun = TRUE;
             }
         }
     }
