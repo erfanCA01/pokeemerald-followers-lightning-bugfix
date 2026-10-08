@@ -1077,7 +1077,8 @@ static void Task_HandleMainMenuAPressed(u8 taskId)
                 DestroyTask(taskId);
                 break;
             case ACTION_MYSTERY_EVENTS:
-                SetMainCallback2(CB2_InitMysteryEventMenu);
+                // SetMainCallback2(CB2_InitMysteryEventMenu);
+				SetMainCallback2(CB2_InitEReader);
                 DestroyTask(taskId);
                 break;
             case ACTION_EREADER:

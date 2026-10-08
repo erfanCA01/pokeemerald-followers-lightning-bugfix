@@ -22,6 +22,7 @@
 #include "trainer_hill.h"
 #include "window.h"
 #include "util.h"
+#include "save.h"
 #include "constants/battle_ai.h"
 #include "constants/event_object_movement.h"
 #include "constants/event_objects.h"
@@ -351,12 +352,17 @@ static void SetUpDataStruct(void)
         sHillData = AllocZeroed(sizeof(*sHillData));
         sHillData->floorId = gMapHeader.mapLayoutId - LAYOUT_TRAINER_HILL_1F;
 
-        // This copy depends on the floor data for each challenge being directly after the
-        // challenge header data, and for the field 'floors' in sHillData to come directly
-        // after the field 'challenge'.
-        // e.g. for HILL_MODE_NORMAL, it will copy sChallenge_Normal to sHillData->challenge and
-        // it will copy sFloors_Normal to sHillData->floors
-        CpuCopy32(sChallengeData[gSaveBlock1Ptr->trainerHill.mode], &sHillData->challenge, sizeof(sHillData->challenge) + sizeof(sHillData->floors));
+        if ((u8)gSaveBlock1Ptr->trainerHill.mode == 4)
+        {
+            // Mode 4 (e-Reader) selected: Load directly from the save sector payload
+            TryReadSpecialSaveSector(SECTOR_ID_TRAINER_HILL, (u8 *)&sHillData->challenge);
+        }
+        else
+        {
+            // Standard English modes (0-3): Load from ROM
+            CpuCopy32(sChallengeData[gSaveBlock1Ptr->trainerHill.mode], &sHillData->challenge, sizeof(sHillData->challenge) + sizeof(sHillData->floors));
+        }
+
         TrainerHillDummy();
     }
 }
@@ -542,13 +548,30 @@ static void GetAllFloorsUsed(void)
     FreeDataStruct();
 }
 
-// May have been dummied. Every time this is called a conditional for var result occurs afterwards
-// Relation to E-Reader is an assumption, most dummied Trainer Hill code seems to be JP E-Reader mode related
+// Restoration of E-Reader Trainer Hill
 static void GetInEReaderMode(void)
 {
-    SetUpDataStruct();
     gSpecialVar_Result = FALSE;
-    FreeDataStruct();
+    
+    if ((u8)gSaveBlock1Ptr->trainerHill.mode == 4)
+    {
+        if (!gSaveBlock1Ptr->trainerHill.maybeECardScanDuringChallenge)
+        {
+            if (ReadTrainerHillAndValidate())
+                gSaveBlock1Ptr->trainerHill.maybeECardScanDuringChallenge = TRUE;
+        }
+
+        if (gSaveBlock1Ptr->trainerHill.maybeECardScanDuringChallenge)
+        {
+            gSpecialVar_Result = TRUE;
+            if (gMapHeader.mapLayoutId == LAYOUT_TRAINER_HILL_ENTRANCE)
+            {
+                // Warp player to the inner challenge mat
+                gSaveBlock1Ptr->pos.x = 9;
+                gSaveBlock1Ptr->pos.y = 6;
+            }
+        }
+    }
 }
 
 bool8 InTrainerHillChallenge(void)
@@ -993,7 +1016,11 @@ static void GetChallengeWon(void)
 static void TrainerHillSetMode(void)
 {
     gSaveBlock1Ptr->trainerHill.mode = gSpecialVar_0x8005;
-    gSaveBlock1Ptr->trainerHill.bestTime = gSaveBlock1Ptr->trainerHillTimes[gSpecialVar_0x8005];
+    
+    if (gSpecialVar_0x8005 == 4)
+        SetTimerValue(&gSaveBlock1Ptr->trainerHill.bestTime, HILL_MAX_TIME);
+    else
+        gSaveBlock1Ptr->trainerHill.bestTime = gSaveBlock1Ptr->trainerHillTimes[gSpecialVar_0x8005];
 }
 
 // Determines which prize list to use from the set of prize lists.

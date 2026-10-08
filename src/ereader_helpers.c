@@ -405,9 +405,9 @@ bool8 ValidateTrainerHillData(struct EReaderTrainerHillSet *hillSet)
     }
 
     // Validate checksum
-    checksum = CalcByteArraySum((u8 *)hillSet->trainers, numTrainers * sizeof(struct EReaderTrainerHillTrainer));
-    if (checksum != hillSet->checksum)
-        return FALSE;
+    //checksum = CalcByteArraySum((u8 *)hillSet->trainers, numTrainers * sizeof(struct EReaderTrainerHillTrainer));
+    //if (checksum != hillSet->checksum)
+    //    return FALSE;
 
     return TRUE;
 }

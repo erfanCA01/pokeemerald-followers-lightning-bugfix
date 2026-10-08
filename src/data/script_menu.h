@@ -768,6 +768,7 @@ static const struct MenuAction MultichoiceList_TagMatchType[] =
     {gText_VarietyTagMatch},
     {gText_UniqueTagMatch},
     {gText_ExpertTagMatch},
+	{gText_EReaderTagMatch},
     {gText_Exit},
 };
 
